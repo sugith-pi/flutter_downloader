@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
@@ -92,7 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
     int status,
     int progress,
   ) {
-    print(
+    log(
       'Callback on background isolate: '
       'task ($id) is in status ($status) and process ($progress)',
     );

@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.Environment
 import android.os.Handler
 import android.provider.MediaStore
+import android.media.MediaScannerConnection
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -434,6 +435,9 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                 )
                 var pendingIntent: PendingIntent? = null
                 if (status == DownloadStatus.COMPLETE) {
+                    if (isImageOrVideoFile(contentType)) {
+                        scanFile(savedFilePath, getContentTypeWithoutCharset(contentType))
+                    }
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                         if (isImageOrVideoFile(contentType) && isExternalStoragePath(savedFilePath)) {
                             addImageOrVideoToGallery(
@@ -816,6 +820,16 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                 contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
             }
         }
+    }
+
+    private fun scanFile(path: String?, mimeType: String?) {
+        if (path == null) return
+        log("Scanning file: $path, mimeType: $mimeType")
+        MediaScannerConnection.scanFile(
+            applicationContext,
+            arrayOf(path),
+            arrayOf(mimeType)
+        ) { _, uri -> log("Scanned $path -> uri=$uri") }
     }
 
     private fun log(message: String) {
