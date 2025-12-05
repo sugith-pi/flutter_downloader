@@ -1,5 +1,6 @@
 #import "FlutterDownloaderPlugin.h"
 #import "FlutterDownloaderDBManager.h"
+#import <Photos/Photos.h>
 
 #define STATUS_UNDEFINED 0
 #define STATUS_ENQUEUED 1
@@ -1063,6 +1064,9 @@ static NSMutableDictionary<NSString*, NSMutableDictionary*> *_runningTaskById = 
             [self executeInDatabaseQueueForTask:^{
                 [weakSelf updateTask:taskId status:STATUS_COMPLETE progress:100];
             }];
+            
+            NSString *mimeType = [downloadTask.response MIMEType];
+            [self saveToPhotos:[destinationURL path] mimeType:mimeType];
         } else {
             if (debug) {
                 NSLog(@"Unable to copy temp file. Error: %@", [error localizedDescription]);
@@ -1169,6 +1173,32 @@ static NSMutableDictionary<NSString*, NSMutableDictionary*> *_runningTaskById = 
 {
     if (debug) {
         NSLog(@"Finished previewing the document");
+    }
+}
+
+
+
+- (void)saveToPhotos:(NSString *)path mimeType:(NSString *)mimeType {
+    if ([mimeType hasPrefix:@"video/"]) {
+        [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+            [PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:[NSURL fileURLWithPath:path]];
+        } completionHandler:^(BOOL success, NSError * _Nullable error) {
+            if (success) {
+                if (debug) NSLog(@"Video saved to camera roll");
+            } else {
+                if (debug) NSLog(@"Error saving video to camera roll: %@", error);
+            }
+        }];
+    } else if ([mimeType hasPrefix:@"image/"]) {
+        [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+            [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:[NSURL fileURLWithPath:path]];
+        } completionHandler:^(BOOL success, NSError * _Nullable error) {
+            if (success) {
+                if (debug) NSLog(@"Image saved to camera roll");
+            } else {
+                if (debug) NSLog(@"Error saving image to camera roll: %@", error);
+            }
+        }];
     }
 }
 
